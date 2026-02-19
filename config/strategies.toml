@@ -1,0 +1,24 @@
+# ClawBot strategy configuration example
+# Copy to config/strategies.toml and customize.
+
+[[strategy]]
+type = "rsi"
+name = "BTC RSI-14"
+pair = "BTCUSDT"
+quantity = 0.001   # BTC per trade
+
+[strategy.params]
+period = 14
+overbought = 70.0
+oversold = 30.0
+
+[[strategy]]
+type = "macd"
+name = "ETH MACD"
+pair = "ETHUSDT"
+quantity = 0.01    # ETH per trade
+
+[strategy.params]
+fast = 12
+slow = 26
+signal = 9

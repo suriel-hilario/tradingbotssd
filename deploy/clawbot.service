@@ -1,0 +1,26 @@
+[Unit]
+Description=ClawBot Automated Trading Engine
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=clawbot
+Group=clawbot
+WorkingDirectory=/var/lib/clawbot
+EnvironmentFile=/etc/clawbot/env
+ExecStart=/usr/local/bin/clawbot
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=clawbot
+
+# Security hardening
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/clawbot
+
+[Install]
+WantedBy=multi-user.target

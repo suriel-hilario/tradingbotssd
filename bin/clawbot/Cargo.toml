@@ -1,0 +1,22 @@
+[package]
+name = "clawbot"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "clawbot"
+path = "src/main.rs"
+
+[dependencies]
+common        = { workspace = true }
+engine        = { workspace = true }
+strategy      = { workspace = true }
+risk          = { workspace = true }
+telegram-ctrl = { workspace = true }
+api           = { workspace = true }
+paper         = { workspace = true }
+tokio         = { workspace = true }
+teloxide      = { workspace = true }
+tracing       = { workspace = true }
+tracing-subscriber = { workspace = true }
+sqlx          = { workspace = true }

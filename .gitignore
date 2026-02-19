@@ -1,0 +1,29 @@
+# Rust build artifacts
+/target/
+Cargo.lock
+
+# Environment secrets — NEVER commit
+.env
+.env.*
+!.env.example
+
+# Database files
+*.db
+*.db-wal
+*.db-shm
+
+# Frontend build output and dependencies
+frontend/dist/
+frontend/node_modules/
+
+# macOS metadata
+**/.DS_Store
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Systemd env file (generated during deploy)
+deploy/env

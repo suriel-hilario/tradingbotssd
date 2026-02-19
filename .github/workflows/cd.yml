@@ -1,0 +1,102 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Frontend build ──────────────────────────────────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm ci && npm run build
+
+      # ── Rust cross-compile ──────────────────────────────────────────────────
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-musl-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-musl-
+
+      - name: Install cross
+        run: cargo install cross --git https://github.com/cross-rs/cross
+
+      - name: Build release binary (musl)
+        run: cross build --release --target x86_64-unknown-linux-musl
+
+      # ── Deploy to Droplet ───────────────────────────────────────────────────
+      - name: Setup SSH key
+        run: |
+          install -m 600 -D /dev/null ~/.ssh/id_ed25519
+          echo "${{ secrets.DO_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.DROPLET_IP }}" >> ~/.ssh/known_hosts
+
+      - name: Backup previous binary
+        run: |
+          ssh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} \
+            "test -f /usr/local/bin/clawbot && cp /usr/local/bin/clawbot /usr/local/bin/clawbot.prev || true"
+
+      - name: Upload new binary
+        run: |
+          scp target/x86_64-unknown-linux-musl/release/clawbot \
+            ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }}:/usr/local/bin/clawbot
+          ssh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} \
+            "chmod +x /usr/local/bin/clawbot"
+
+      - name: Write environment file
+        run: |
+          ssh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} "
+            sudo mkdir -p /etc/clawbot
+            sudo tee /etc/clawbot/env > /dev/null <<'EOF'
+          BINANCE_API_KEY=${{ secrets.BINANCE_API_KEY }}
+          BINANCE_SECRET=${{ secrets.BINANCE_SECRET }}
+          TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_ALLOWED_USER_IDS=${{ secrets.TELEGRAM_ALLOWED_USER_IDS }}
+          DASHBOARD_TOKEN=${{ secrets.DASHBOARD_TOKEN }}
+          TRADING_MODE=${{ secrets.TRADING_MODE }}
+          DATABASE_URL=sqlite:///var/lib/clawbot/clawbot.db
+          EOF
+            sudo chmod 600 /etc/clawbot/env
+          "
+
+      - name: Restart service & health check
+        run: |
+          ssh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} \
+            "sudo systemctl restart clawbot"
+
+          echo "Waiting for service to become healthy..."
+          for i in $(seq 1 15); do
+            sleep 2
+            STATUS=$(ssh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} \
+              "curl -sf http://localhost:8080/healthz || echo FAIL")
+            echo "Attempt $i: $STATUS"
+            if echo "$STATUS" | grep -q '"status":"ok"'; then
+              echo "Service is healthy"
+              exit 0
+            fi
+          done
+          echo "ERROR: Service did not become healthy within 30s"
+          ssh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} \
+            "sudo systemctl status clawbot --no-pager"
+          exit 1

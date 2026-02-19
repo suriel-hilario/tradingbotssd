@@ -1,0 +1,11 @@
+[package]
+name = "telegram-ctrl"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+common   = { workspace = true }
+tokio    = { workspace = true }
+teloxide = { workspace = true }
+tracing  = { workspace = true }
+serde    = { workspace = true }

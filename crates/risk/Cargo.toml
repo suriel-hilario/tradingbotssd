@@ -1,0 +1,16 @@
+[package]
+name = "risk"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+common    = { workspace = true }
+tokio     = { workspace = true }
+tracing   = { workspace = true }
+serde     = { workspace = true }
+thiserror = { workspace = true }
+chrono    = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+tokio    = { workspace = true, features = ["full"] }
