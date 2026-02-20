@@ -9,10 +9,9 @@ use rust_embed::RustEmbed;
 use crate::AppState;
 
 /// Embeds the compiled Vue frontend from `frontend/dist/` at compile time.
-/// For production builds, replace the folder path with `../../frontend/dist/`
-/// after running `npm run build` in the `frontend/` directory.
+/// Run `npm run build` in the `frontend/` directory before compiling.
 #[derive(RustEmbed)]
-#[folder = "../../frontend/dist-placeholder/"]
+#[folder = "../../frontend/dist/"]
 struct FrontendAssets;
 
 pub fn static_router() -> Router<AppState> {

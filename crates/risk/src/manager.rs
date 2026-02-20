@@ -180,6 +180,12 @@ impl RiskManager {
                     position.quantity,
                 );
                 let _ = self.order_tx.send(close_order).await;
+
+                // Remove closed position from tracking
+                let pnl_usd = pnl_pct * position.entry_price * position.quantity;
+                self.remove_position(&position.id).await;
+                self.update_portfolio_value(pnl_usd);
+
                 let _ = self
                     .risk_event_tx
                     .send(RiskEvent::StopLossTriggered {
@@ -199,6 +205,12 @@ impl RiskManager {
                     position.quantity,
                 );
                 let _ = self.order_tx.send(close_order).await;
+
+                // Remove closed position from tracking
+                let pnl_usd = pnl_pct * position.entry_price * position.quantity;
+                self.remove_position(&position.id).await;
+                self.update_portfolio_value(pnl_usd);
+
                 let _ = self
                     .risk_event_tx
                     .send(RiskEvent::TakeProfitTriggered {
@@ -236,6 +248,29 @@ impl RiskManager {
                     .await;
             }
         }
+    }
+
+    /// Remove a closed position from the shared open-positions list.
+    async fn remove_position(&self, position_id: &str) {
+        let mut positions = self.open_positions.write().await;
+        if let Some(idx) = positions.iter().position(|p| p.id == position_id) {
+            let removed = positions.remove(idx);
+            info!(pair = %removed.pair, id = %removed.id, "Position removed from tracking after close");
+        }
+    }
+
+    /// Update portfolio value after a realized P&L, and track the peak for drawdown.
+    fn update_portfolio_value(&mut self, realized_pnl_usd: f64) {
+        self.portfolio_value_usd += realized_pnl_usd;
+        if self.portfolio_value_usd > self.portfolio_peak_usd {
+            self.portfolio_peak_usd = self.portfolio_value_usd;
+        }
+        info!(
+            portfolio_value = self.portfolio_value_usd,
+            portfolio_peak = self.portfolio_peak_usd,
+            realized_pnl = realized_pnl_usd,
+            "Portfolio value updated"
+        );
     }
 
     async fn reject(&self, signal: &Signal, reason: RejectionReason) {
@@ -356,6 +391,11 @@ mod tests {
             .expect("timeout")
             .expect("no order emitted");
         assert_eq!(order.side, OrderSide::Sell);
+
+        // Position should be removed from tracking after stop-loss
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        let pos = positions.read().await;
+        assert!(pos.is_empty(), "Position should be removed after stop-loss");
     }
 
     #[tokio::test]
@@ -385,6 +425,11 @@ mod tests {
             matches!(event, RiskEvent::TakeProfitTriggered { .. }),
             "Expected TakeProfitTriggered"
         );
+
+        // Position should be removed from tracking after take-profit
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        let pos = positions.read().await;
+        assert!(pos.is_empty(), "Position should be removed after take-profit");
     }
 
     #[tokio::test]
