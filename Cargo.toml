@@ -38,13 +38,13 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 dotenvy = "0.15"
 
 # Database
-sqlx = { version = "0.7", features = ["sqlite", "runtime-tokio-native-tls", "macros", "migrate"] }
+sqlx = { version = "0.7", features = ["sqlite", "runtime-tokio-rustls", "macros", "migrate"] }
 
 # HTTP / REST
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 
 # WebSocket
-tokio-tungstenite = { version = "0.21", features = ["native-tls"] }
+tokio-tungstenite = { version = "0.21", features = ["rustls-tls-webpki-roots"] }
 url = "2"
 futures-util = "0.3"
 
