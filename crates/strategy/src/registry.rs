@@ -27,9 +27,8 @@ impl StrategyRegistry {
         let mut strategies: Vec<Box<dyn Strategy>> = Vec::new();
 
         for cfg in &file_cfg.strategies {
-            let strategy = build_strategy(cfg).unwrap_or_else(|e| {
-                panic!("Unknown strategy type '{}': {e}", cfg.strategy_type)
-            });
+            let strategy = build_strategy(cfg)
+                .unwrap_or_else(|e| panic!("Unknown strategy type '{}': {e}", cfg.strategy_type));
             info!(name = %strategy.name(), pair = %strategy.pair(), "Registered strategy");
             strategies.push(strategy);
         }
@@ -45,10 +44,7 @@ impl StrategyRegistry {
     /// Only passes events to strategies configured for the event's pair.
     pub fn process(&mut self, event: &MarketEvent) -> Vec<Signal> {
         if event.is_candle_closed {
-            let history = self
-                .price_history
-                .entry(event.pair.clone())
-                .or_default();
+            let history = self.price_history.entry(event.pair.clone()).or_default();
             history.push(event.price);
             if history.len() > self.max_history {
                 history.remove(0);
@@ -103,7 +99,10 @@ impl StrategyRegistry {
                     }
                 }
                 Err(broadcast::error::RecvError::Lagged(n)) => {
-                    warn!(dropped = n, "Strategy registry lagged — dropped market events");
+                    warn!(
+                        dropped = n,
+                        "Strategy registry lagged — dropped market events"
+                    );
                 }
                 Err(broadcast::error::RecvError::Closed) => {
                     warn!("Market broadcast channel closed");
@@ -116,15 +115,18 @@ impl StrategyRegistry {
 
 // ─── Strategy builders ────────────────────────────────────────────────────────
 
-fn build_strategy(
-    cfg: &StrategyConfig,
-) -> Result<Box<dyn Strategy>, String> {
+fn build_strategy(cfg: &StrategyConfig) -> Result<Box<dyn Strategy>, String> {
     match cfg.strategy_type.as_str() {
         "rsi" => {
             let period = param_usize(&cfg.params, "period", 14);
             let overbought = param_f64(&cfg.params, "overbought", 70.0);
             let oversold = param_f64(&cfg.params, "oversold", 30.0);
-            Ok(Box::new(RsiStrategy::new(cfg.clone(), period, overbought, oversold)))
+            Ok(Box::new(RsiStrategy::new(
+                cfg.clone(),
+                period,
+                overbought,
+                oversold,
+            )))
         }
         "macd" => {
             let fast = param_usize(&cfg.params, "fast", 12);

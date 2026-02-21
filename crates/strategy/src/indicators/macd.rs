@@ -12,14 +12,17 @@ pub struct MacdIndicator {
 /// The result of a MACD computation.
 #[derive(Debug, Clone, PartialEq)]
 pub enum MacdSignal {
-    Bullish,  // MACD crossed above signal line
-    Bearish,  // MACD crossed below signal line
-    Neutral,  // No crossover on the latest bar
+    Bullish, // MACD crossed above signal line
+    Bearish, // MACD crossed below signal line
+    Neutral, // No crossover on the latest bar
 }
 
 impl MacdIndicator {
     pub fn new(fast: usize, slow: usize, signal: usize) -> Self {
-        assert!(fast < slow, "MACD fast period must be less than slow period");
+        assert!(
+            fast < slow,
+            "MACD fast period must be less than slow period"
+        );
         Self { fast, slow, signal }
     }
 

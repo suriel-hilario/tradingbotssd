@@ -100,7 +100,11 @@ impl BinanceClient {
 impl ExchangeClient for BinanceClient {
     async fn submit_order(&self, order: &Order) -> Result<Fill> {
         let side = order.side.to_string();
-        let order_type = if order.price.is_some() { "LIMIT" } else { "MARKET" };
+        let order_type = if order.price.is_some() {
+            "LIMIT"
+        } else {
+            "MARKET"
+        };
 
         let mut params = format!(
             "symbol={}&side={}&type={}&quantity={}",
@@ -148,8 +152,8 @@ impl ExchangeClient for BinanceClient {
             })
             .filter(|b| b.asset != "USDT" && b.asset != "BNB")
             .map(|b| {
-                let qty = b.free.parse::<f64>().unwrap_or(0.0)
-                    + b.locked.parse::<f64>().unwrap_or(0.0);
+                let qty =
+                    b.free.parse::<f64>().unwrap_or(0.0) + b.locked.parse::<f64>().unwrap_or(0.0);
                 Position {
                     id: uuid::Uuid::new_v4().to_string(),
                     pair: format!("{}USDT", b.asset),
@@ -174,10 +178,7 @@ impl ExchangeClient for BinanceClient {
             .await
             .map_err(|e| Error::Http(e.to_string()))?;
 
-        let ticker: PriceTicker = resp
-            .json()
-            .await
-            .map_err(|e| Error::Http(e.to_string()))?;
+        let ticker: PriceTicker = resp.json().await.map_err(|e| Error::Http(e.to_string()))?;
 
         ticker
             .price

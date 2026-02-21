@@ -37,22 +37,18 @@ impl Config {
         let trading_mode = match required_env("TRADING_MODE").to_lowercase().as_str() {
             "paper" => TradingMode::Paper,
             "live" => TradingMode::Live,
-            other => panic!(
-                "ERROR: TRADING_MODE must be 'paper' or 'live', got: '{other}'"
-            ),
+            other => panic!("ERROR: TRADING_MODE must be 'paper' or 'live', got: '{other}'"),
         };
 
         let telegram_allowed_user_ids = required_env("TELEGRAM_ALLOWED_USER_IDS")
             .split(',')
             .map(|s| {
-                s.trim()
-                    .parse::<i64>()
-                    .unwrap_or_else(|_| {
-                        panic!(
-                            "TELEGRAM_ALLOWED_USER_IDS contains non-numeric ID: '{}'",
-                            s.trim()
-                        )
-                    })
+                s.trim().parse::<i64>().unwrap_or_else(|_| {
+                    panic!(
+                        "TELEGRAM_ALLOWED_USER_IDS contains non-numeric ID: '{}'",
+                        s.trim()
+                    )
+                })
             })
             .collect();
 

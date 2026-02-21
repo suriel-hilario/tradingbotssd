@@ -41,11 +41,9 @@ pub struct StrategyConfig {
 impl StrategyFileConfig {
     /// Load from a TOML file. Exits process on error.
     pub fn load(path: &str) -> Self {
-        let content = std::fs::read_to_string(path).unwrap_or_else(|e| {
-            panic!("Failed to read strategy config at '{path}': {e}")
-        });
-        toml::from_str(&content).unwrap_or_else(|e| {
-            panic!("Failed to parse strategy config at '{path}': {e}")
-        })
+        let content = std::fs::read_to_string(path)
+            .unwrap_or_else(|e| panic!("Failed to read strategy config at '{path}': {e}"));
+        toml::from_str(&content)
+            .unwrap_or_else(|e| panic!("Failed to parse strategy config at '{path}': {e}"))
     }
 }

@@ -55,12 +55,8 @@ impl BinanceStream {
     async fn connect_once(&self) -> Result<()> {
         let pair_lower = self.pair.to_lowercase();
         // Subscribe to 1-minute kline stream
-        let url_str = format!(
-            "wss://stream.binance.com:9443/ws/{}@kline_1m",
-            pair_lower
-        );
-        let url = Url::parse(&url_str)
-            .map_err(|e| common::Error::WebSocket(e.to_string()))?;
+        let url_str = format!("wss://stream.binance.com:9443/ws/{}@kline_1m", pair_lower);
+        let url = Url::parse(&url_str).map_err(|e| common::Error::WebSocket(e.to_string()))?;
 
         let (ws_stream, _) = connect_async(url)
             .await

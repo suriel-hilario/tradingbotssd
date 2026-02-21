@@ -2,8 +2,8 @@ mod auth;
 pub mod routes;
 
 use std::collections::VecDeque;
-use std::sync::Arc;
 use std::net::SocketAddr;
+use std::sync::Arc;
 
 use axum::Router;
 use sqlx::SqlitePool;

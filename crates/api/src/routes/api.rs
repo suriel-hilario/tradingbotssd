@@ -60,10 +60,7 @@ struct TradesQuery {
     pair: Option<String>,
 }
 
-async fn get_trades(
-    State(state): State<AppState>,
-    Query(q): Query<TradesQuery>,
-) -> Json<Value> {
+async fn get_trades(State(state): State<AppState>, Query(q): Query<TradesQuery>) -> Json<Value> {
     let page = q.page.unwrap_or(1).max(1);
     let limit = q.limit.unwrap_or(50).min(200);
     let offset = (page - 1) * limit;
@@ -78,19 +75,22 @@ async fn get_trades(
         .await
         .unwrap_or_default();
 
-        let total: i32 = sqlx::query_scalar!(
-            "SELECT COUNT(*) FROM trades WHERE pair = ?1", pair
-        )
-        .fetch_one(&state.db)
-        .await
-        .unwrap_or(0);
+        let total: i32 = sqlx::query_scalar!("SELECT COUNT(*) FROM trades WHERE pair = ?1", pair)
+            .fetch_one(&state.db)
+            .await
+            .unwrap_or(0);
 
-        let trades: Vec<Value> = rows.iter().map(|t| json!({
-            "id": t.id, "pair": t.pair, "side": t.side,
-            "entry_price": t.entry_price, "exit_price": t.exit_price,
-            "quantity": t.quantity, "pnl_usd": t.pnl_usd,
-            "mode": t.mode, "opened_at": t.opened_at, "closed_at": t.closed_at,
-        })).collect();
+        let trades: Vec<Value> = rows
+            .iter()
+            .map(|t| {
+                json!({
+                    "id": t.id, "pair": t.pair, "side": t.side,
+                    "entry_price": t.entry_price, "exit_price": t.exit_price,
+                    "quantity": t.quantity, "pnl_usd": t.pnl_usd,
+                    "mode": t.mode, "opened_at": t.opened_at, "closed_at": t.closed_at,
+                })
+            })
+            .collect();
         Json(json!({ "trades": trades, "total": total, "page": page, "limit": limit }))
     } else {
         let rows = sqlx::query!(
@@ -107,12 +107,17 @@ async fn get_trades(
             .await
             .unwrap_or(0);
 
-        let trades: Vec<Value> = rows.iter().map(|t| json!({
-            "id": t.id, "pair": t.pair, "side": t.side,
-            "entry_price": t.entry_price, "exit_price": t.exit_price,
-            "quantity": t.quantity, "pnl_usd": t.pnl_usd,
-            "mode": t.mode, "opened_at": t.opened_at, "closed_at": t.closed_at,
-        })).collect();
+        let trades: Vec<Value> = rows
+            .iter()
+            .map(|t| {
+                json!({
+                    "id": t.id, "pair": t.pair, "side": t.side,
+                    "entry_price": t.entry_price, "exit_price": t.exit_price,
+                    "quantity": t.quantity, "pnl_usd": t.pnl_usd,
+                    "mode": t.mode, "opened_at": t.opened_at, "closed_at": t.closed_at,
+                })
+            })
+            .collect();
         Json(json!({ "trades": trades, "total": total, "page": page, "limit": limit }))
     }
 }
@@ -120,12 +125,10 @@ async fn get_trades(
 // ─── Performance ──────────────────────────────────────────────────────────────
 
 async fn get_performance(State(state): State<AppState>) -> Json<Value> {
-    let trades = sqlx::query!(
-        r#"SELECT pnl_usd, closed_at FROM trades ORDER BY closed_at ASC"#
-    )
-    .fetch_all(&state.db)
-    .await
-    .unwrap_or_default();
+    let trades = sqlx::query!(r#"SELECT pnl_usd, closed_at FROM trades ORDER BY closed_at ASC"#)
+        .fetch_all(&state.db)
+        .await
+        .unwrap_or_default();
 
     if trades.is_empty() {
         return Json(json!({
@@ -145,10 +148,16 @@ async fn get_performance(State(state): State<AppState>) -> Json<Value> {
 
     for t in &trades {
         equity += t.pnl_usd;
-        if equity > peak { peak = equity; }
+        if equity > peak {
+            peak = equity;
+        }
         let dd = (peak - equity) / peak;
-        if dd > max_dd { max_dd = dd; }
-        if t.pnl_usd > 0.0 { wins += 1; }
+        if dd > max_dd {
+            max_dd = dd;
+        }
+        if t.pnl_usd > 0.0 {
+            wins += 1;
+        }
         curve.push(json!({ "timestamp": t.closed_at, "value": equity }));
     }
 

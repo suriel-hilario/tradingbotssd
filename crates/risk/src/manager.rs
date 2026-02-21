@@ -128,7 +128,8 @@ impl RiskManager {
         {
             let positions = self.open_positions.read().await;
             if positions.len() >= MAX_OPEN_ORDERS {
-                self.reject(&signal, RejectionReason::HardCeilingReached).await;
+                self.reject(&signal, RejectionReason::HardCeilingReached)
+                    .await;
                 return;
             }
         }
@@ -141,7 +142,8 @@ impl RiskManager {
             .unwrap_or(0.0);
         let notional = signal.quantity() * pair_price;
         if notional > self.config.max_exposure_per_trade_usd && pair_price > 0.0 {
-            self.reject(&signal, RejectionReason::ExposureLimitExceeded).await;
+            self.reject(&signal, RejectionReason::ExposureLimitExceeded)
+                .await;
             return;
         }
 
@@ -176,7 +178,11 @@ impl RiskManager {
                 info!(pair = %position.pair, pnl_pct = pnl_pct, "Stop-loss triggered");
                 let close_order = Order::market(
                     &position.pair,
-                    if position.side == OrderSide::Buy { OrderSide::Sell } else { OrderSide::Buy },
+                    if position.side == OrderSide::Buy {
+                        OrderSide::Sell
+                    } else {
+                        OrderSide::Buy
+                    },
                     position.quantity,
                 );
                 let _ = self.order_tx.send(close_order).await;
@@ -201,7 +207,11 @@ impl RiskManager {
                 info!(pair = %position.pair, pnl_pct = pnl_pct, "Take-profit triggered");
                 let close_order = Order::market(
                     &position.pair,
-                    if position.side == OrderSide::Buy { OrderSide::Sell } else { OrderSide::Buy },
+                    if position.side == OrderSide::Buy {
+                        OrderSide::Sell
+                    } else {
+                        OrderSide::Buy
+                    },
                     position.quantity,
                 );
                 let _ = self.order_tx.send(close_order).await;
@@ -229,8 +239,8 @@ impl RiskManager {
         if self.portfolio_peak_usd <= 0.0 {
             return;
         }
-        let drawdown = (self.portfolio_peak_usd - self.portfolio_value_usd)
-            / self.portfolio_peak_usd;
+        let drawdown =
+            (self.portfolio_peak_usd - self.portfolio_value_usd) / self.portfolio_peak_usd;
 
         if drawdown >= self.config.max_drawdown_pct {
             let current_state = *self.engine_state.read().await;
@@ -294,9 +304,9 @@ impl RiskManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use common::{EngineState, Signal};
     use std::sync::Arc;
     use tokio::sync::{broadcast, mpsc, RwLock};
-    use common::{EngineState, Signal};
 
     fn make_position(pair: &str, entry_price: f64, quantity: f64) -> Position {
         Position {
@@ -352,7 +362,15 @@ mod tests {
             10_000.0,
         );
 
-        (manager, signal_tx, order_rx, risk_event_rx, market_tx, positions, engine_state)
+        (
+            manager,
+            signal_tx,
+            order_rx,
+            risk_event_rx,
+            market_tx,
+            positions,
+            engine_state,
+        )
     }
 
     #[tokio::test]
@@ -429,7 +447,10 @@ mod tests {
         // Position should be removed from tracking after take-profit
         tokio::time::sleep(std::time::Duration::from_millis(50)).await;
         let pos = positions.read().await;
-        assert!(pos.is_empty(), "Position should be removed after take-profit");
+        assert!(
+            pos.is_empty(),
+            "Position should be removed after take-profit"
+        );
     }
 
     #[tokio::test]
@@ -449,7 +470,10 @@ mod tests {
 
         // quantity=0.1 @ 1000.0 = 100 USD > 50 USD limit
         signal_tx
-            .send(Signal::Buy { pair: "BTCUSDT".into(), quantity: 0.1 })
+            .send(Signal::Buy {
+                pair: "BTCUSDT".into(),
+                quantity: 0.1,
+            })
             .await
             .unwrap();
 
@@ -490,7 +514,10 @@ mod tests {
         *state.write().await = EngineState::Halted;
 
         signal_tx
-            .send(Signal::Buy { pair: "ETHUSDT".into(), quantity: 0.01 })
+            .send(Signal::Buy {
+                pair: "ETHUSDT".into(),
+                quantity: 0.01,
+            })
             .await
             .unwrap();
 
@@ -534,7 +561,10 @@ mod tests {
         tokio::time::sleep(std::time::Duration::from_millis(50)).await;
 
         signal_tx
-            .send(Signal::Buy { pair: "NEWPAIR".into(), quantity: 0.01 })
+            .send(Signal::Buy {
+                pair: "NEWPAIR".into(),
+                quantity: 0.01,
+            })
             .await
             .unwrap();
 

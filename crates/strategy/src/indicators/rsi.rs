@@ -12,7 +12,11 @@ pub struct RsiIndicator {
 impl RsiIndicator {
     pub fn new(period: usize, overbought: f64, oversold: f64) -> Self {
         assert!(period >= 2, "RSI period must be >= 2");
-        Self { period, overbought, oversold }
+        Self {
+            period,
+            overbought,
+            oversold,
+        }
     }
 
     /// Compute RSI from a slice of close prices (oldest first).
@@ -27,7 +31,11 @@ impl RsiIndicator {
         let initial = &changes[..self.period];
 
         let mut avg_gain = initial.iter().filter(|&&c| c > 0.0).sum::<f64>() / self.period as f64;
-        let mut avg_loss = initial.iter().filter(|&&c| c < 0.0).map(|c| c.abs()).sum::<f64>()
+        let mut avg_loss = initial
+            .iter()
+            .filter(|&&c| c < 0.0)
+            .map(|c| c.abs())
+            .sum::<f64>()
             / self.period as f64;
 
         // Wilder smoothing over remaining changes

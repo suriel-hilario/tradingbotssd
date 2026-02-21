@@ -88,7 +88,11 @@ async fn main() {
             .strategies
             .iter()
             .filter_map(|s| {
-                if seen.insert(s.pair.clone()) { Some(s.pair.clone()) } else { None }
+                if seen.insert(s.pair.clone()) {
+                    Some(s.pair.clone())
+                } else {
+                    None
+                }
             })
             .collect()
     };
@@ -101,11 +105,20 @@ async fn main() {
     let exchange_client: Arc<dyn common::ExchangeClient> = match cfg.trading_mode {
         TradingMode::Live => {
             info!("Live trading mode — using BinanceClient");
-            Arc::new(BinanceClient::new(&cfg.binance_api_key, &cfg.binance_secret))
+            Arc::new(BinanceClient::new(
+                &cfg.binance_api_key,
+                &cfg.binance_secret,
+            ))
         }
         TradingMode::Paper => {
-            info!(slippage_bps = cfg.paper_slippage_bps, "Paper trading mode — using PaperClient");
-            Arc::new(PaperClient::new(cfg.paper_initial_balance, cfg.paper_slippage_bps))
+            info!(
+                slippage_bps = cfg.paper_slippage_bps,
+                "Paper trading mode — using PaperClient"
+            );
+            Arc::new(PaperClient::new(
+                cfg.paper_initial_balance,
+                cfg.paper_slippage_bps,
+            ))
         }
     };
 
@@ -200,10 +213,14 @@ async fn main() {
         while let Some(event) = risk_event_rx.recv().await {
             let msg = match event {
                 common::RiskEvent::StopLossTriggered { pair, close_price } => {
-                    format!("⚠️ Stop-loss triggered on {pair}. Position closed at {close_price:.4}.")
+                    format!(
+                        "⚠️ Stop-loss triggered on {pair}. Position closed at {close_price:.4}."
+                    )
                 }
                 common::RiskEvent::TakeProfitTriggered { pair, close_price } => {
-                    format!("✅ Take-profit triggered on {pair}. Position closed at {close_price:.4}.")
+                    format!(
+                        "✅ Take-profit triggered on {pair}. Position closed at {close_price:.4}."
+                    )
                 }
                 common::RiskEvent::OrderFailed { pair, error } => {
                     format!("🚨 Order failed on {pair}: {error}")

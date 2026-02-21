@@ -1,5 +1,5 @@
+use common::{EngineState, MarketEvent, OrderSide, Position, TradingMode};
 use proptest::prelude::*;
-use common::{MarketEvent, EngineState, Position, OrderSide, TradingMode};
 use risk::{RiskConfig, RiskManager};
 use std::sync::Arc;
 use tokio::sync::{broadcast, mpsc, RwLock};

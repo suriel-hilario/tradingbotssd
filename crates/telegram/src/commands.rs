@@ -1,10 +1,6 @@
 use std::sync::Arc;
 
-use teloxide::{
-    dispatching::UpdateHandler,
-    prelude::*,
-    utils::command::BotCommands,
-};
+use teloxide::{dispatching::UpdateHandler, prelude::*, utils::command::BotCommands};
 use tokio::sync::{mpsc, RwLock};
 use tracing::{info, warn};
 
@@ -80,7 +76,8 @@ async fn auth_filter(user_id: UserId, deps: Arc<BotDeps>) -> bool {
 async fn handle_start(bot: Bot, msg: Message, deps: Arc<BotDeps>) -> HandlerResult {
     let state = *deps.engine_state.read().await;
     if state == EngineState::Running {
-        bot.send_message(msg.chat.id, "Engine is already running.").await?;
+        bot.send_message(msg.chat.id, "Engine is already running.")
+            .await?;
     } else {
         let _ = deps.command_tx.send(EngineCommand::Start).await;
         // Wait briefly for the engine to process the command and update state
@@ -99,9 +96,11 @@ async fn handle_start(bot: Bot, msg: Message, deps: Arc<BotDeps>) -> HandlerResu
 async fn handle_stop(bot: Bot, msg: Message, deps: Arc<BotDeps>) -> HandlerResult {
     let state = *deps.engine_state.read().await;
     if state == EngineState::Stopped {
-        bot.send_message(msg.chat.id, "Engine is already stopped.").await?;
+        bot.send_message(msg.chat.id, "Engine is already stopped.")
+            .await?;
     } else {
-        bot.send_message(msg.chat.id, "Closing open positions and stopping\u{2026}").await?;
+        bot.send_message(msg.chat.id, "Closing open positions and stopping\u{2026}")
+            .await?;
         let _ = deps.command_tx.send(EngineCommand::Stop).await;
         bot.send_message(msg.chat.id, "Engine stopped.").await?;
     }
@@ -124,10 +123,12 @@ async fn handle_status(bot: Bot, msg: Message, deps: Arc<BotDeps>) -> HandlerRes
 async fn handle_reset_drawdown(bot: Bot, msg: Message, deps: Arc<BotDeps>) -> HandlerResult {
     let state = *deps.engine_state.read().await;
     if state != EngineState::Halted {
-        bot.send_message(msg.chat.id, "No active drawdown halt.").await?;
+        bot.send_message(msg.chat.id, "No active drawdown halt.")
+            .await?;
     } else {
         let _ = deps.command_tx.send(EngineCommand::ResetDrawdown).await;
-        bot.send_message(msg.chat.id, "Drawdown reset. Engine resuming.").await?;
+        bot.send_message(msg.chat.id, "Drawdown reset. Engine resuming.")
+            .await?;
     }
     Ok(())
 }
