@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT pnl_usd, closed_at FROM trades ORDER BY closed_at ASC",
+  "describe": {
+    "columns": [
+      {
+        "name": "pnl_usd",
+        "ordinal": 0,
+        "type_info": "Float"
+      },
+      {
+        "name": "closed_at",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "96d89a6f377dcdf930c344d4afcff27c52174954540aecec3532635529ea05b8"
+}

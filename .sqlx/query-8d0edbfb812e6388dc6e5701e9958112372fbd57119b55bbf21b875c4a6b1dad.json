@@ -1,0 +1,74 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, pair, side, entry_price, exit_price, quantity, pnl_usd, mode, opened_at, closed_at\n               FROM trades ORDER BY closed_at DESC LIMIT ?1 OFFSET ?2",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "pair",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "side",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "entry_price",
+        "ordinal": 3,
+        "type_info": "Float"
+      },
+      {
+        "name": "exit_price",
+        "ordinal": 4,
+        "type_info": "Float"
+      },
+      {
+        "name": "quantity",
+        "ordinal": 5,
+        "type_info": "Float"
+      },
+      {
+        "name": "pnl_usd",
+        "ordinal": 6,
+        "type_info": "Float"
+      },
+      {
+        "name": "mode",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "opened_at",
+        "ordinal": 8,
+        "type_info": "Text"
+      },
+      {
+        "name": "closed_at",
+        "ordinal": 9,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "8d0edbfb812e6388dc6e5701e9958112372fbd57119b55bbf21b875c4a6b1dad"
+}

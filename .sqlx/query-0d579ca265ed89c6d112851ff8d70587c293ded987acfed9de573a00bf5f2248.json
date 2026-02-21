@@ -1,0 +1,56 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, pair, side, entry_price, quantity, mode, opened_at FROM positions",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "pair",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "side",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "entry_price",
+        "ordinal": 3,
+        "type_info": "Float"
+      },
+      {
+        "name": "quantity",
+        "ordinal": 4,
+        "type_info": "Float"
+      },
+      {
+        "name": "mode",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "opened_at",
+        "ordinal": 6,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "0d579ca265ed89c6d112851ff8d70587c293ded987acfed9de573a00bf5f2248"
+}
