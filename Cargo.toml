@@ -49,7 +49,7 @@ url = "2"
 futures-util = "0.3"
 
 # Telegram
-teloxide = { version = "0.12", features = ["macros", "ctrlc_handler"] }
+teloxide = { version = "0.12", default-features = false, features = ["macros", "ctrlc_handler", "rustls"] }
 
 # Web server
 axum = { version = "0.7", features = ["ws", "macros"] }
