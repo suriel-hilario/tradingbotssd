@@ -3,20 +3,63 @@ use std::sync::Arc;
 use sqlx::SqlitePool;
 use tokio::sync::{broadcast, mpsc, RwLock};
 use tracing::info;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
 
-use common::{Config, EngineState, TradingMode};
+use common::{Config, TradingMode};
 use engine::{BinanceClient, Engine, OrderExecutor};
 use paper::PaperClient;
 use risk::{RiskConfig, RiskManager};
 use strategy::{StrategyFileConfig, StrategyRegistry};
 use telegram_ctrl::{start_bot, BotDeps};
 
+/// A tracing layer that forwards formatted log lines to a broadcast channel
+/// so the dashboard WebSocket can stream them in real time.
+struct BroadcastLayer {
+    tx: broadcast::Sender<String>,
+}
+
+impl<S: tracing::Subscriber> tracing_subscriber::Layer<S> for BroadcastLayer {
+    fn on_event(
+        &self,
+        event: &tracing::Event<'_>,
+        _ctx: tracing_subscriber::layer::Context<'_, S>,
+    ) {
+        let mut visitor = MessageVisitor(String::new());
+        event.record(&mut visitor);
+        let level = event.metadata().level();
+        let target = event.metadata().target();
+        let line = format!("{level} {target}: {}", visitor.0);
+        let _ = self.tx.send(line);
+    }
+}
+
+struct MessageVisitor(String);
+
+impl tracing::field::Visit for MessageVisitor {
+    fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
+        if field.name() == "message" {
+            self.0 = format!("{value:?}");
+        } else if !self.0.is_empty() {
+            self.0.push_str(&format!(" {}={:?}", field.name(), value));
+        } else {
+            self.0 = format!("{}={:?}", field.name(), value);
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() {
+    // ── Shared log broadcast (created early so tracing layer can use it) ────
+    let (log_tx, _) = broadcast::channel::<String>(1024);
+
     // ── Logging ──────────────────────────────────────────────────────────────
-    tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env().add_directive("info".parse().unwrap()))
+    let broadcast_layer = BroadcastLayer { tx: log_tx.clone() };
+    tracing_subscriber::registry()
+        .with(EnvFilter::from_default_env().add_directive("info".parse().unwrap()))
+        .with(tracing_subscriber::fmt::layer())
+        .with(broadcast_layer)
         .init();
 
     // ── Config ────────────────────────────────────────────────────────────────
@@ -34,9 +77,7 @@ async fn main() {
     info!("Database ready");
 
     // ── Shared state ──────────────────────────────────────────────────────────
-    let engine_state = Arc::new(RwLock::new(EngineState::Stopped));
     let open_positions: Arc<RwLock<Vec<common::Position>>> = Arc::new(RwLock::new(Vec::new()));
-    let (log_tx, _) = broadcast::channel::<String>(1024);
 
     // ── Engine ────────────────────────────────────────────────────────────────
     // Pairs to stream — read from strategy config
@@ -53,6 +94,8 @@ async fn main() {
     };
 
     let (engine, engine_handle) = Engine::new(pairs);
+    // Use the engine's own state — single source of truth
+    let engine_state = engine_handle.state_handle();
 
     // ── Exchange client (injected based on TRADING_MODE) ──────────────────────
     let exchange_client: Arc<dyn common::ExchangeClient> = match cfg.trading_mode {
@@ -62,7 +105,7 @@ async fn main() {
         }
         TradingMode::Paper => {
             info!(slippage_bps = cfg.paper_slippage_bps, "Paper trading mode — using PaperClient");
-            Arc::new(PaperClient::new(10_000.0, cfg.paper_slippage_bps))
+            Arc::new(PaperClient::new(cfg.paper_initial_balance, cfg.paper_slippage_bps))
         }
     };
 
@@ -86,7 +129,7 @@ async fn main() {
         market_rx_risk,
         engine_state.clone(),
         open_positions.clone(),
-        10_000.0,
+        cfg.paper_initial_balance,
     );
 
     // ── Order executor ────────────────────────────────────────────────────────
@@ -121,13 +164,27 @@ async fn main() {
         })),
     };
 
+    // ── Log buffer (keeps recent logs for new dashboard clients) ─────────────
+    let log_buffer = api::LogBuffer::new(500);
+    {
+        let buffer = log_buffer.clone();
+        let mut rx = log_tx.subscribe();
+        tokio::spawn(async move {
+            while let Ok(line) = rx.recv().await {
+                buffer.push(line).await;
+            }
+        });
+    }
+
     // ── Dashboard API ─────────────────────────────────────────────────────────
     let api_state = api::AppState {
         db: db.clone(),
         engine_state: engine_state.clone(),
         trading_mode: cfg.trading_mode,
         dashboard_token: cfg.dashboard_token.clone(),
+        initial_balance: cfg.paper_initial_balance,
         log_tx: log_tx.clone(),
+        log_buffer,
     };
 
     // ── Risk event forwarder (sends alerts to Telegram) ───────────────────────

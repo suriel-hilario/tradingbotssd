@@ -43,18 +43,29 @@ async fn ws_logs_handler(
         ));
     }
 
-    ws.on_upgrade(move |socket| handle_ws(socket, state.log_tx.subscribe()))
+    let log_buffer = state.log_buffer.clone();
+    let log_rx = state.log_tx.subscribe();
+    ws.on_upgrade(move |socket| handle_ws(socket, log_rx, log_buffer))
 }
 
 async fn handle_ws(
     mut socket: WebSocket,
     mut log_rx: tokio::sync::broadcast::Receiver<String>,
+    log_buffer: crate::LogBuffer,
 ) {
+    // Send log history first so the client sees previous logs
+    let history = log_buffer.snapshot().await;
+    for line in history {
+        if socket.send(Message::Text(line)).await.is_err() {
+            return;
+        }
+    }
+
+    // Then stream live logs
     loop {
         match log_rx.recv().await {
             Ok(line) => {
                 if socket.send(Message::Text(line)).await.is_err() {
-                    // Client disconnected
                     break;
                 }
             }

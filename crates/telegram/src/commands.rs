@@ -83,7 +83,15 @@ async fn handle_start(bot: Bot, msg: Message, deps: Arc<BotDeps>) -> HandlerResu
         bot.send_message(msg.chat.id, "Engine is already running.").await?;
     } else {
         let _ = deps.command_tx.send(EngineCommand::Start).await;
-        bot.send_message(msg.chat.id, "Engine started.").await?;
+        // Wait briefly for the engine to process the command and update state
+        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        let new_state = *deps.engine_state.read().await;
+        let reply = if new_state == EngineState::Running {
+            "Engine started. Streams connecting to Binance..."
+        } else {
+            "Start command sent. Engine transitioning..."
+        };
+        bot.send_message(msg.chat.id, reply).await?;
     }
     Ok(())
 }

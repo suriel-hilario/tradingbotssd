@@ -11,24 +11,13 @@ use tracing::warn;
 
 use crate::{auth::require_auth, AppState};
 
-pub fn api_router() -> Router<AppState> {
+pub fn api_router(state: AppState) -> Router<AppState> {
     Router::new()
         .route("/api/portfolio", get(get_portfolio))
         .route("/api/trades", get(get_trades))
         .route("/api/performance", get(get_performance))
         .route("/api/config", get(get_config).post(post_config))
-        .route_layer(middleware::from_fn_with_state(
-            // Placeholder AppState for the middleware layer factory.
-            // Axum replaces this with the real state at runtime via with_state().
-            AppState {
-                db: sqlx::SqlitePool::connect_lazy("sqlite::memory:").unwrap(),
-                engine_state: Default::default(),
-                trading_mode: common::TradingMode::Paper,
-                dashboard_token: String::new(),
-                log_tx: tokio::sync::broadcast::channel::<String>(1).0,
-            },
-            require_auth,
-        ))
+        .route_layer(middleware::from_fn_with_state(state, require_auth))
 }
 
 // ─── Portfolio ────────────────────────────────────────────────────────────────
@@ -148,7 +137,7 @@ async fn get_performance(State(state): State<AppState>) -> Json<Value> {
         }));
     }
 
-    let mut equity = 10_000.0f64;
+    let mut equity = state.initial_balance;
     let mut peak = equity;
     let mut max_dd = 0.0f64;
     let mut wins = 0usize;

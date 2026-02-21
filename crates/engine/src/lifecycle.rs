@@ -24,6 +24,11 @@ impl EngineHandle {
         *self.state.read().await
     }
 
+    /// Get a shared reference to the engine state lock.
+    pub fn state_handle(&self) -> Arc<RwLock<EngineState>> {
+        self.state.clone()
+    }
+
     /// Subscribe to the market event broadcast.
     pub fn subscribe_market(&self) -> broadcast::Receiver<MarketEvent> {
         self.market_tx.subscribe()

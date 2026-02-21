@@ -19,6 +19,7 @@ pub struct Config {
     // Trading
     pub trading_mode: TradingMode,
     pub paper_slippage_bps: f64,
+    pub paper_initial_balance: f64,
 
     // Database
     pub database_url: String,
@@ -68,6 +69,9 @@ impl Config {
             paper_slippage_bps: optional_env("PAPER_SLIPPAGE_BPS")
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(10.0),
+            paper_initial_balance: optional_env("PAPER_INITIAL_BALANCE")
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(10_000.0),
             database_url: required_env("DATABASE_URL"),
             strategy_config_path: optional_env("STRATEGY_CONFIG_PATH")
                 .unwrap_or_else(|| "config/strategies.toml".to_string()),

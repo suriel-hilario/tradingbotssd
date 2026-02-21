@@ -5,7 +5,7 @@
 type = "rsi"
 name = "BTC RSI-14"
 pair = "BTCUSDT"
-quantity = 0.001   # BTC per trade
+quantity = 0.00025  # BTC per trade (~$25, half of 50€ balance)
 
 [strategy.params]
 period = 14
@@ -16,7 +16,7 @@ oversold = 30.0
 type = "macd"
 name = "ETH MACD"
 pair = "ETHUSDT"
-quantity = 0.01    # ETH per trade
+quantity = 0.009    # ETH per trade (~$25, half of 50€ balance)
 
 [strategy.params]
 fast = 12
