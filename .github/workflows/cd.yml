@@ -83,22 +83,19 @@ jobs:
 
       - name: Write environment file
         run: |
-          ssh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} "
-            sudo mkdir -p /etc/clawbot
-            sudo tee /etc/clawbot/env > /dev/null <<'EOF'
-          BINANCE_API_KEY=${{ secrets.BINANCE_API_KEY }}
-          BINANCE_SECRET=${{ secrets.BINANCE_SECRET }}
-          TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}
-          TELEGRAM_ALLOWED_USER_IDS=${{ secrets.TELEGRAM_ALLOWED_USER_IDS }}
-          DASHBOARD_TOKEN=${{ secrets.DASHBOARD_TOKEN }}
-          TRADING_MODE=${{ secrets.TRADING_MODE }}
-          DATABASE_URL=sqlite:///var/lib/clawbot/clawbot.db
-          STRATEGY_CONFIG_PATH=/var/lib/clawbot/config/strategies.toml
-          PAPER_INITIAL_BALANCE=50
-          PAPER_SLIPPAGE_BPS=10
-          EOF
-            sudo chmod 600 /etc/clawbot/env
-          "
+          printf '%s\n' \
+            "BINANCE_API_KEY=${{ secrets.BINANCE_API_KEY }}" \
+            "BINANCE_SECRET=${{ secrets.BINANCE_SECRET }}" \
+            "TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}" \
+            "TELEGRAM_ALLOWED_USER_IDS=${{ secrets.TELEGRAM_ALLOWED_USER_IDS }}" \
+            "DASHBOARD_TOKEN=${{ secrets.DASHBOARD_TOKEN }}" \
+            "TRADING_MODE=${{ secrets.TRADING_MODE }}" \
+            "DATABASE_URL=sqlite:///var/lib/clawbot/clawbot.db" \
+            "STRATEGY_CONFIG_PATH=/var/lib/clawbot/config/strategies.toml" \
+            "PAPER_INITIAL_BALANCE=50" \
+            "PAPER_SLIPPAGE_BPS=10" \
+            | ssh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} \
+              "sudo mkdir -p /etc/clawbot && sudo tee /etc/clawbot/env > /dev/null && sudo chmod 600 /etc/clawbot/env"
 
       - name: Restart service & health check
         run: |
