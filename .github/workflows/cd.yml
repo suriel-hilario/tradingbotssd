@@ -115,5 +115,5 @@ jobs:
           done
           echo "ERROR: Service did not become healthy within 30s"
           ssh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} \
-            "sudo systemctl status clawbot --no-pager"
+            "sudo systemctl status clawbot --no-pager && echo '--- JOURNAL ---' && sudo journalctl -u clawbot -n 50 --no-pager"
           exit 1
