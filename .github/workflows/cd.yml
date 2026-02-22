@@ -51,19 +51,35 @@ jobs:
         run: |
           install -m 600 -D /dev/null ~/.ssh/id_ed25519
           echo "${{ secrets.DO_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
-          ssh-keyscan -H "${{ secrets.DROPLET_IP }}" >> ~/.ssh/known_hosts
+          # Retry ssh-keyscan up to 5 times — droplet may take a moment to accept connections
+          for i in 1 2 3 4 5; do
+            ssh-keyscan -T 10 -H "${{ secrets.DROPLET_IP }}" >> ~/.ssh/known_hosts && break
+            echo "ssh-keyscan attempt $i failed, retrying in 5s..."
+            sleep 5
+          done
+          # Write SSH client config to avoid host key prompts and set timeouts
+          cat >> ~/.ssh/config << 'EOF'
+          Host *
+            StrictHostKeyChecking yes
+            ConnectTimeout 15
+            ServerAliveInterval 10
+          EOF
 
       - name: Backup previous binary
         run: |
           ssh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} \
             "test -f /usr/local/bin/clawbot && cp /usr/local/bin/clawbot /usr/local/bin/clawbot.prev || true"
 
-      - name: Upload new binary
+      - name: Upload binary and config
         run: |
           scp target/x86_64-unknown-linux-musl/release/clawbot \
             ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }}:/usr/local/bin/clawbot
           ssh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} \
-            "chmod +x /usr/local/bin/clawbot"
+            "chmod +x /usr/local/bin/clawbot && mkdir -p /var/lib/clawbot/config"
+          scp config/strategies.toml \
+            ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }}:/var/lib/clawbot/config/strategies.toml
+          ssh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} \
+            "chown -R clawbot:clawbot /var/lib/clawbot"
 
       - name: Write environment file
         run: |
@@ -77,6 +93,9 @@ jobs:
           DASHBOARD_TOKEN=${{ secrets.DASHBOARD_TOKEN }}
           TRADING_MODE=${{ secrets.TRADING_MODE }}
           DATABASE_URL=sqlite:///var/lib/clawbot/clawbot.db
+          STRATEGY_CONFIG_PATH=/var/lib/clawbot/config/strategies.toml
+          PAPER_INITIAL_BALANCE=50
+          PAPER_SLIPPAGE_BPS=10
           EOF
             sudo chmod 600 /etc/clawbot/env
           "
