@@ -103,6 +103,7 @@ mod tests {
         (0..n).map(|i| 100.0 + i as f64 * 0.5).collect()
     }
 
+    #[allow(dead_code)]
     fn trending_down(n: usize) -> Vec<f64> {
         (0..n).map(|i| 200.0 - i as f64 * 0.5).collect()
     }
