@@ -65,7 +65,7 @@ jobs:
             ServerAliveInterval 10
           EOF
 
-      - name: Prepare droplet directories
+      - name: Prepare droplet directories and service
         run: |
           ssh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} bash << 'ENDSSH'
             # Ensure service user exists
@@ -75,6 +75,11 @@ jobs:
             chown -R clawbot:clawbot /var/lib/clawbot
             chmod 750 /var/lib/clawbot
           ENDSSH
+          # Upload and install the latest service file
+          scp deploy/clawbot.service \
+            ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }}:/etc/systemd/system/clawbot.service
+          ssh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} \
+            "systemctl daemon-reload && systemctl enable clawbot"
 
       - name: Backup previous binary
         run: |

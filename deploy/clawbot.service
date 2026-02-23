@@ -19,7 +19,7 @@ SyslogIdentifier=clawbot
 # Security hardening
 NoNewPrivileges=yes
 PrivateTmp=yes
-ProtectSystem=strict
+ProtectSystem=full
 ReadWritePaths=/var/lib/clawbot
 
 [Install]
