@@ -65,6 +65,17 @@ jobs:
             ServerAliveInterval 10
           EOF
 
+      - name: Prepare droplet directories
+        run: |
+          ssh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} bash << 'ENDSSH'
+            # Ensure service user exists
+            id clawbot &>/dev/null || useradd -r -m -s /bin/false clawbot
+            # Ensure data and config dirs exist with correct ownership
+            mkdir -p /var/lib/clawbot/config
+            chown -R clawbot:clawbot /var/lib/clawbot
+            chmod 750 /var/lib/clawbot
+          ENDSSH
+
       - name: Backup previous binary
         run: |
           ssh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} \
@@ -75,7 +86,7 @@ jobs:
           scp target/x86_64-unknown-linux-musl/release/clawbot \
             ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }}:/usr/local/bin/clawbot
           ssh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} \
-            "chmod +x /usr/local/bin/clawbot && mkdir -p /var/lib/clawbot/config"
+            "chmod +x /usr/local/bin/clawbot"
           scp config/strategies.toml \
             ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }}:/var/lib/clawbot/config/strategies.toml
           ssh ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }} \
